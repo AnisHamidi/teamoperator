@@ -29,14 +29,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 const (
@@ -152,6 +147,10 @@ func (t *TeamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 				return ctrl.Result{}, err
 			}
 		}
+		if err = controllerutil.SetControllerReference(team, namespace, t.Scheme); err != nil {
+			log.Error(err, "Failed to add owner refrence")
+			return ctrl.Result{}, err
+		}
 
 		err = t.Client.Update(ctx, namespace)
 		if err != nil {
@@ -207,15 +206,16 @@ func (t *TeamReconciler) checkMetricNSForTeamIsDeleted(ctx context.Context, req 
 func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&teamv1alpha1.Team{}).
-		Watches(
-			&source.Kind{Type: &corev1.Namespace{}},
-			&handler.EnqueueRequestForObject{},
-			builder.WithPredicates(predicate.Funcs{
-				DeleteFunc: func(e event.DeleteEvent) bool {
-					return true // Watch all Namespace deletions
-				},
-			}),
-		).
+		// Watches(
+		// 	&source.Kind{Type: &corev1.Namespace{}},
+		// 	&handler.EnqueueRequestForObject{},
+		// 	builder.WithPredicates(predicate.Funcs{
+		// 		DeleteFunc: func(e event.DeleteEvent) bool {
+		// 			return true // Watch all Namespace deletions
+		// 		},
+		// 	}),
+		// ).
+		Owns(&corev1.Namespace{}).
 		Complete(t)
 }
 
