@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	teamv1alpha1 "github.com/snapp-incubator/team-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -91,6 +92,30 @@ func (t *TeamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			}
 		}
 		return ctrl.Result{}, nil
+	}
+	namespace := &corev1.Namespace{}
+	_ = t.Client.Get(ctx, types.NamespacedName{Name: namespace.Name}, namespace)
+
+	if !namespace.ObjectMeta.DeletionTimestamp.IsZero() {
+		log.Info("im here")
+		if controllerutil.ContainsFinalizer(namespace, teamFinalizer) {
+			// our finalizer is present, so lets handle any external dependency
+			if err := t.finalizeNamespace(ctx, req, team); err != nil {
+				// if fail to delete the external dependency here, return with error
+				// so that it can be retried.
+				return ctrl.Result{}, err
+			}
+
+			// remove our finalizer from the list and update it.
+			controllerutil.RemoveFinalizer(networkChaos, chaosFinalizer)
+			if err := r.Update(ctx, networkChaos); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+
+		// Stop reconciliation as the item is being deleted
+		return ctrl.Result{}, nil
+
 	}
 
 	teamName := team.GetName()
@@ -187,4 +212,33 @@ func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			},
 		).
 		Complete(t)
+}
+
+func (t *TeamReconciler) finalizeNetworkChaos(ctx context.Context, req ctrl.Request, team *teamv1alpha1.Team) error {
+	log := log.FromContext(ctx)
+	log.Info("im in the functions")
+
+	// Check if the namespace exists in the list
+	found := false
+	for i, ns := range team.Spec.Namespaces {
+		if ns == req.Namespace {
+			// Remove the namespace from the list
+			team.Spec.Namespaces = append(team.Spec.Namespaces[:i], team.Spec.Namespaces[i+1:]...)
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		// Namespace not found in the list
+		return fmt.Errorf("namespace %s not found in the list of namespaces", req.Namespace)
+	}
+
+	// Update the Team resource with the modified TeamSpec
+	if err := t.Client.Update(context.Background(), team); err != nil {
+		return fmt.Errorf("failed to update Team resource: %v", err)
+	}
+
+	return nil
+
 }
