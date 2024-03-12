@@ -107,8 +107,8 @@ func (t *TeamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			}
 
 			// remove our finalizer from the list and update it.
-			controllerutil.RemoveFinalizer(networkChaos, chaosFinalizer)
-			if err := r.Update(ctx, networkChaos); err != nil {
+			controllerutil.RemoveFinalizer(namespace, teamFinalizer)
+			if err := t.Update(ctx, namespace); err != nil {
 				return ctrl.Result{}, err
 			}
 		}
@@ -214,7 +214,7 @@ func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(t)
 }
 
-func (t *TeamReconciler) finalizeNetworkChaos(ctx context.Context, req ctrl.Request, team *teamv1alpha1.Team) error {
+func (t *TeamReconciler) finalizeNamespace(ctx context.Context, req ctrl.Request, team *teamv1alpha1.Team) error {
 	log := log.FromContext(ctx)
 	log.Info("im in the functions")
 
