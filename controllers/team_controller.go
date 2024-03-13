@@ -222,17 +222,16 @@ func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func (t *TeamReconciler) finalizeNamespace(ctx context.Context, req ctrl.Request, ns *corev1.Namespace, team *teamv1alpha1.Team) error {
-	// Remove the namespace from the list in TeamSpec
 
-	// for i, namespace := range team.Spec.Namespaces {
-	// 	if namespace == ns.Name {
-	// 		team.Spec.Namespaces = append(team.Spec.Namespaces[:i], team.Spec.Namespaces[i+1:]...)
-	// 		break
-	// 	}
-	// }
-	// if err := t.Client.Update(ctx, team); err != nil {
-	// 	return err
-	// }
+	for i, namespace := range team.Spec.Namespaces {
+		if namespace == ns.Name {
+			team.Spec.Namespaces = append(team.Spec.Namespaces[:i], team.Spec.Namespaces[i+1:]...)
+			break
+		}
+	}
+	if err := t.Client.Update(ctx, team); err != nil {
+		return err
+	}
 
 	return nil
 
