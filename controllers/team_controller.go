@@ -217,7 +217,7 @@ func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	labelPredicate := predicate.NewPredicateFuncs(func(obj client.Object) bool {
 		labels := obj.GetLabels()
-		return labels["snappcloud.io/team"] != "" // Check if the label exists with any value
+		return labels["snappcloud.io/team"] == "smapp" // Check if the label exists with any value
 	})
 
 	return ctrl.NewControllerManagedBy(mgr).
