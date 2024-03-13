@@ -97,9 +97,6 @@ func (t *TeamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 		return ctrl.Result{}, nil
 	}
-	namespace := &corev1.Namespace{}
-	_ = t.Client.Get(ctx, types.NamespacedName{Name: namespace.Name}, namespace)
-
 	teamName := team.GetName()
 
 	errAddFinalizer := t.CheckMetricNSFinalizerIsAdded(ctx, team)
@@ -136,6 +133,7 @@ func (t *TeamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 				if err := t.finalizeNamespace(ctx, req, namespace, team); err != nil {
 					return ctrl.Result{}, err
 				}
+				log.Info("before removing finizler")
 
 				// remove our finalizer from the list and update it.
 				controllerutil.RemoveFinalizer(namespace, teamFinalizer)
