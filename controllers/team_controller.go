@@ -100,28 +100,6 @@ func (t *TeamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	namespace := &corev1.Namespace{}
 	_ = t.Client.Get(ctx, types.NamespacedName{Name: namespace.Name}, namespace)
 
-	if !namespace.ObjectMeta.DeletionTimestamp.IsZero() {
-		log.Info("im here to delete")
-		if controllerutil.ContainsFinalizer(namespace, teamFinalizer) {
-			// our finalizer is present, so lets handle any external dependency
-			if err := t.finalizeNamespace(ctx, req, team); err != nil {
-				// if fail to delete the external dependency here, return with error
-				// so that it can be retried.
-				return ctrl.Result{}, err
-			}
-
-			// remove our finalizer from the list and update it.
-			controllerutil.RemoveFinalizer(namespace, teamFinalizer)
-			if err := t.Update(ctx, namespace); err != nil {
-				return ctrl.Result{}, err
-			}
-		}
-
-		// Stop reconciliation as the item is being deleted
-		return ctrl.Result{}, nil
-
-	}
-
 	teamName := team.GetName()
 
 	errAddFinalizer := t.CheckMetricNSFinalizerIsAdded(ctx, team)
@@ -147,12 +125,37 @@ func (t *TeamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		namespace.Labels["snappcloud.io/datasource"] = "true"
 		// Add finalizer to Namespace resource
 		// Add finalizer to Namespace resource if not present
-		if !controllerutil.ContainsFinalizer(namespace, teamFinalizer) {
-			controllerutil.AddFinalizer(namespace, teamFinalizer)
-			if err = t.Client.Update(ctx, namespace); err != nil {
-				return ctrl.Result{}, err
+		if namespace.ObjectMeta.DeletionTimestamp.IsZero() {
+			// The object is not being deleted, so if it does not have our finalizer,
+			// then lets add the finalizer and update the object. This is equivalent
+			// to registering our finalizer.
+			if !controllerutil.ContainsFinalizer(namespace, teamFinalizer) {
+				controllerutil.AddFinalizer(namespace, teamFinalizer)
+				if err := t.Update(ctx, namespace); err != nil {
+					return ctrl.Result{}, err
+				}
 			}
+		} else {
+			// The object is being deleted
+			if controllerutil.ContainsFinalizer(namespace, teamFinalizer) {
+				// our finalizer is present, so lets handle any external dependency
+				if err := t.finalizeNamespace(ctx, req, namespace, team); err != nil {
+					// if fail to delete the external dependency here, return with error
+					// so that it can be retried.
+					return ctrl.Result{}, err
+				}
+
+				// remove our finalizer from the list and update it.
+				controllerutil.RemoveFinalizer(namespace, teamFinalizer)
+				if err := t.Update(ctx, namespace); err != nil {
+					return ctrl.Result{}, err
+				}
+			}
+
+			// Stop reconciliation as the item is being deleted
+			return ctrl.Result{}, nil
 		}
+
 		if err = controllerutil.SetControllerReference(team, namespace, t.Scheme); err != nil {
 			log.Error(err, "Failed to add owner refrence")
 			return ctrl.Result{}, err
@@ -227,30 +230,23 @@ func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(t)
 }
 
-func (t *TeamReconciler) finalizeNamespace(ctx context.Context, req ctrl.Request, team *teamv1alpha1.Team) error {
-	log := log.FromContext(ctx)
-	log.Info("im in the functions")
+func (t *TeamReconciler) finalizeNamespace(ctx context.Context, req ctrl.Request, ns *corev1.Namespace, team *teamv1alpha1.Team) error {
+	// Remove the namespace from the list in TeamSpec
+	for i, namespace := range team.Spec.Namespaces {
+		if namespace == ns.Name {
+			team.Spec.Namespaces = append(team.Spec.Namespaces[:i], team.Spec.Namespaces[i+1:]...)
+			break
+		}
+	}
 
-	// // Check if the namespace exists in the list
-	// found := false
-	// for i, ns := range team.Spec.Namespaces {
-	// 	if ns == req.Namespace {
-	// 		// Remove the namespace from the list
-	// 		team.Spec.Namespaces = append(team.Spec.Namespaces[:i], team.Spec.Namespaces[i+1:]...)
-	// 		found = true
-	// 		break
-	// 	}
-	// }
+	// Update the Team resource with the modified TeamSpec
+	if err := controllerutil.SetControllerReference(team, ns, t.Scheme); err != nil {
+		return err
+	}
 
-	// if !found {
-	// 	// Namespace not found in the list
-	// 	return fmt.Errorf("namespace %s not found in the list of namespaces", req.Namespace)
-	// }
-
-	// // Update the Team resource with the modified TeamSpec
-	// if err := t.Client.Update(context.Background(), team); err != nil {
-	// 	return fmt.Errorf("failed to update Team resource: %v", err)
-	// }
+	if err := t.Client.Update(ctx, team); err != nil {
+		return err
+	}
 
 	return nil
 
