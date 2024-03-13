@@ -242,12 +242,6 @@ func (t *TeamReconciler) finalizeNamespace(ctx context.Context, req ctrl.Request
 			break
 		}
 	}
-
-	// Update the Team resource with the modified TeamSpec
-	if err := controllerutil.SetControllerReference(team, ns, t.Scheme); err != nil {
-		return err
-	}
-
 	if err := t.Client.Update(ctx, team); err != nil {
 		return err
 	}
