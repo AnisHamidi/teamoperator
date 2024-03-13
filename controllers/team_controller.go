@@ -215,9 +215,13 @@ func (t *TeamReconciler) checkMetricNSForTeamIsDeleted(ctx context.Context, req 
 func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// Predicate to filter Pods with the label app=toxiproxy
 
+	// labelPredicate := predicate.NewPredicateFuncs(func(obj client.Object) bool {
+	// 	labels := obj.GetLabels()
+	// 	return labels["snappcloud.io/team"] == "smapp" // Check if the label exists with any value
+
+	// })
 	labelPredicate := predicate.NewPredicateFuncs(func(obj client.Object) bool {
-		labels := obj.GetLabels()
-		return labels["snappcloud.io/team"] == "smapp" // Check if the label exists with any value
+		return obj.GetLabels()["snappcloud.io/team"] == "smapp"
 	})
 
 	return ctrl.NewControllerManagedBy(mgr).
