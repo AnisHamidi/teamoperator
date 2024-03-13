@@ -123,12 +123,8 @@ func (t *TeamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 		namespace.Labels["snappcloud.io/team"] = teamName
 		namespace.Labels["snappcloud.io/datasource"] = "true"
-		// Add finalizer to Namespace resource
-		// Add finalizer to Namespace resource if not present
+
 		if namespace.ObjectMeta.DeletionTimestamp.IsZero() {
-			// The object is not being deleted, so if it does not have our finalizer,
-			// then lets add the finalizer and update the object. This is equivalent
-			// to registering our finalizer.
 			if !controllerutil.ContainsFinalizer(namespace, teamFinalizer) {
 				controllerutil.AddFinalizer(namespace, teamFinalizer)
 				if err := t.Update(ctx, namespace); err != nil {
@@ -136,12 +132,8 @@ func (t *TeamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 				}
 			}
 		} else {
-			// The object is being deleted
 			if controllerutil.ContainsFinalizer(namespace, teamFinalizer) {
-				// our finalizer is present, so lets handle any external dependency
 				if err := t.finalizeNamespace(ctx, req, namespace, team); err != nil {
-					// if fail to delete the external dependency here, return with error
-					// so that it can be retried.
 					return ctrl.Result{}, err
 				}
 
