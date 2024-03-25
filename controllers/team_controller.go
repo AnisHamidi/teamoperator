@@ -70,7 +70,8 @@ func (t *TeamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	log := log.FromContext(ctx)
 
 	team := &teamv1alpha1.Team{}
-	log.Info("*****************Name:", req.Name, "**********Namespace:", req.Namespace)
+	log.Info("*****************Name:", req.NamespacedName.Name)
+	log.Info("*****************Namespace:", req.NamespacedName.Namespace)
 
 	err := t.Client.Get(ctx, req.NamespacedName, team)
 	if err != nil {
