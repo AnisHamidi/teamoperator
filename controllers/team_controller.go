@@ -209,7 +209,7 @@ func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	labelPredicate := predicate.NewPredicateFuncs(func(obj client.Object) bool {
 		return obj.GetLabels()["snappcloud.io/team"] == "smapp"
 	})
-	mapFunc := func(c context.Context, a client.Object) []reconcile.Request {
+	mapFunc := func(a client.Object) []reconcile.Request {
 		ctx := context.Background()
 		log := log.FromContext(ctx)
 
