@@ -70,6 +70,7 @@ func (t *TeamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	log := log.FromContext(ctx)
 
 	team := &teamv1alpha1.Team{}
+	log.Info("*****************Name:", req.Name, "**********Namespace:", req.Namespace)
 
 	err := t.Client.Get(ctx, req.NamespacedName, team)
 	if err != nil {
@@ -215,14 +216,14 @@ func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 		var requests []reconcile.Request
 
-		var networkChaosList teamv1alpha1.TeamList
-		if err := mgr.GetClient().List(ctx, &networkChaosList, &client.ListOptions{}); err != nil {
+		var teamList teamv1alpha1.TeamList
+		if err := mgr.GetClient().List(ctx, &teamList, &client.ListOptions{}); err != nil {
 			// Handle error
 			log.Error(err, "Unable to list NetworkChaos resources")
 			return nil
 		}
 
-		for _, networkChaos := range networkChaosList.Items {
+		for _, networkChaos := range teamList.Items {
 			requests = append(requests, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      networkChaos.Name,
