@@ -228,9 +228,12 @@ func (t *TeamReconciler) finalizeNamespace(ctx context.Context, req ctrl.Request
 		}
 	}
 	// Remove the 'snappcloud.io/team' label from the namespace
-	if _, exists := ns.Labels["snappcloud.io/team"]; exists {
+	_, ok := ns.Labels["snappcloud.io/team"]
+	if ok {
 		delete(ns.Labels, "snappcloud.io/team")
 	}
+	//	if _, ok := ns.Labels["snappcloud.io/team"]; ok {
+	//}
 	if err := t.Client.Update(ctx, team); err != nil {
 		return err
 	}
