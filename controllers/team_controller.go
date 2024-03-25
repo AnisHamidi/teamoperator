@@ -28,14 +28,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 const (
@@ -202,42 +197,42 @@ func (t *TeamReconciler) checkMetricNSForTeamIsDeleted(ctx context.Context, req 
 // SetupWithManager sets up the controller with the Manager.
 func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// Predicate to filter Pods with the label app=toxiproxy
-	labelPredicate := predicate.NewPredicateFuncs(func(obj client.Object) bool {
-		return obj.GetLabels()["snappcloud.io/team"] == "smapp"
-	})
+	// labelPredicate := predicate.NewPredicateFuncs(func(obj client.Object) bool {
+	// 	return obj.GetLabels()["snappcloud.io/team"] == "smapp"
+	// })
 
-	mapFunc := func(a client.Object) []reconcile.Request {
-		ctx := context.Background()
-		log := log.FromContext(ctx)
+	// mapFunc := func(a client.Object) []reconcile.Request {
+	// 	ctx := context.Background()
+	// 	log := log.FromContext(ctx)
 
-		var requests []reconcile.Request
+	// 	var requests []reconcile.Request
 
-		var teamList teamv1alpha1.TeamList
-		if err := mgr.GetClient().List(ctx, &teamList, &client.ListOptions{}); err != nil {
-			// Handle error
-			log.Error(err, "Unable to list team resources")
-			return nil
-		}
+	// 	var teamList teamv1alpha1.TeamList
+	// 	if err := mgr.GetClient().List(ctx, &teamList, &client.ListOptions{}); err != nil {
+	// 		// Handle error
+	// 		log.Error(err, "Unable to list team resources")
+	// 		return nil
+	// 	}
 
-		for _, networkChaos := range teamList.Items {
-			requests = append(requests, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      networkChaos.Name,
-					Namespace: networkChaos.Namespace,
-				},
-			})
-		}
+	// 	for _, networkChaos := range teamList.Items {
+	// 		requests = append(requests, reconcile.Request{
+	// 			NamespacedName: types.NamespacedName{
+	// 				Name:      networkChaos.Name,
+	// 				Namespace: networkChaos.Namespace,
+	// 			},
+	// 		})
+	// 	}
 
-		return requests
-	}
+	// 	return requests
+	// }
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&teamv1alpha1.Team{}).
-		Watches(
-			&source.Kind{Type: &corev1.Namespace{}},
-			handler.EnqueueRequestsFromMapFunc(mapFunc),
-			builder.WithPredicates(labelPredicate),
-		).
+		// Watches(
+		// 	&source.Kind{Type: &corev1.Namespace{}},
+		// 	handler.EnqueueRequestsFromMapFunc(mapFunc),
+		// 	builder.WithPredicates(labelPredicate),
+		// ).
 		Complete(t)
 }
 
