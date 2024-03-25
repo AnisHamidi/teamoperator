@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
@@ -208,12 +209,36 @@ func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	labelPredicate := predicate.NewPredicateFuncs(func(obj client.Object) bool {
 		return obj.GetLabels()["snappcloud.io/team"] == "smapp"
 	})
+	mapFunc := func(c context.Context, a client.Object) []reconcile.Request {
+		ctx := context.Background()
+		log := log.FromContext(ctx)
+
+		var requests []reconcile.Request
+
+		var networkChaosList teamv1alpha1.TeamList
+		if err := mgr.GetClient().List(ctx, &networkChaosList, &client.ListOptions{}); err != nil {
+			// Handle error
+			log.Error(err, "Unable to list NetworkChaos resources")
+			return nil
+		}
+
+		for _, networkChaos := range networkChaosList.Items {
+			requests = append(requests, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      networkChaos.Name,
+					Namespace: networkChaos.Namespace,
+				},
+			})
+		}
+
+		return requests
+	}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&teamv1alpha1.Team{}).
 		Watches(
 			&source.Kind{Type: &corev1.Namespace{}},
-			&handler.EnqueueRequestForObject{},
+			handler.EnqueueRequestsFromMapFunc(mapFunc),
 			builder.WithPredicates(labelPredicate),
 		).
 		Complete(t)
