@@ -70,8 +70,8 @@ func (t *TeamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	log := log.FromContext(ctx)
 
 	team := &teamv1alpha1.Team{}
-	log.Info("*****************Name:", req.NamespacedName.Name)
-	log.Info("*****************Namespace:", req.NamespacedName.Namespace)
+	log.Info("*****************Name:" + req.NamespacedName.Name)
+	log.Info("*****************Namespace:" + req.NamespacedName.Namespace)
 
 	err := t.Client.Get(ctx, req.NamespacedName, team)
 	if err != nil {
@@ -202,15 +202,10 @@ func (t *TeamReconciler) checkMetricNSForTeamIsDeleted(ctx context.Context, req 
 // SetupWithManager sets up the controller with the Manager.
 func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// Predicate to filter Pods with the label app=toxiproxy
-
-	// labelPredicate := predicate.NewPredicateFuncs(func(obj client.Object) bool {
-	// 	labels := obj.GetLabels()
-	// 	return labels["snappcloud.io/team"] == "smapp" // Check if the label exists with any value
-
-	// })
 	labelPredicate := predicate.NewPredicateFuncs(func(obj client.Object) bool {
 		return obj.GetLabels()["snappcloud.io/team"] == "smapp"
 	})
+
 	mapFunc := func(a client.Object) []reconcile.Request {
 		ctx := context.Background()
 		log := log.FromContext(ctx)
@@ -220,7 +215,7 @@ func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		var teamList teamv1alpha1.TeamList
 		if err := mgr.GetClient().List(ctx, &teamList, &client.ListOptions{}); err != nil {
 			// Handle error
-			log.Error(err, "Unable to list NetworkChaos resources")
+			log.Error(err, "Unable to list team resources")
 			return nil
 		}
 
