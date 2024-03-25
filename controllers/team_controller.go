@@ -234,6 +234,10 @@ func (t *TeamReconciler) finalizeNamespace(ctx context.Context, req ctrl.Request
 	}
 	//	if _, ok := ns.Labels["snappcloud.io/team"]; ok {
 	//}
+	if err := t.Client.Update(ctx, ns); err != nil {
+		return err
+	}
+
 	if err := t.Client.Update(ctx, team); err != nil {
 		return err
 	}
