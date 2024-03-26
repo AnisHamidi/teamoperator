@@ -201,7 +201,6 @@ func (t *TeamReconciler) checkMetricNSForTeamIsDeleted(ctx context.Context, req 
 
 // SetupWithManager sets up the controller with the Manager.
 func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	// Predicate to filter Pods with the label app=toxiproxy
 	// labelPredicate := predicate.NewPredicateFuncs(func(obj client.Object) bool {
 	// 	return obj.GetLabels()["snappcloud.io/team"] == "smapp"
 	// })
@@ -225,6 +224,7 @@ func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		}
 
 		for _, team := range teamList.Items {
+			log.Info("*****************we are in setup mangager" + team.Name + "namespace" + team.Namespace)
 			requests = append(requests, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      team.Name,
