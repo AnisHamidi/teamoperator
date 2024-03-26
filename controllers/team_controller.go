@@ -70,8 +70,6 @@ func (t *TeamReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	log := log.FromContext(ctx)
 
 	team := &teamv1alpha1.Team{}
-	log.Info("*****************Name:" + req.NamespacedName.Name)
-	log.Info("*****************Namespace:" + req.NamespacedName.Namespace)
 
 	err := t.Client.Get(ctx, req.NamespacedName, team)
 	if err != nil {
@@ -201,9 +199,7 @@ func (t *TeamReconciler) checkMetricNSForTeamIsDeleted(ctx context.Context, req 
 
 // SetupWithManager sets up the controller with the Manager.
 func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	// labelPredicate := predicate.NewPredicateFuncs(func(obj client.Object) bool {
-	// 	return obj.GetLabels()["snappcloud.io/team"] == "smapp"
-	// })
+
 	labelPredicate := predicate.NewPredicateFuncs(func(obj client.Object) bool {
 		labels := obj.GetLabels()
 		_, exists := labels["snappcloud.io/team"]
@@ -224,7 +220,6 @@ func (t *TeamReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		}
 
 		for _, team := range teamList.Items {
-			log.Info("*****************we are in setup mangager" + team.Name + "namespace" + team.Namespace)
 			requests = append(requests, reconcile.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      team.Name,
@@ -259,8 +254,6 @@ func (t *TeamReconciler) finalizeNamespace(ctx context.Context, req ctrl.Request
 	if ok {
 		delete(ns.Labels, "snappcloud.io/team")
 	}
-	//	if _, ok := ns.Labels["snappcloud.io/team"]; ok {
-	//}
 	if err := t.Client.Update(ctx, ns); err != nil {
 		return err
 	}
